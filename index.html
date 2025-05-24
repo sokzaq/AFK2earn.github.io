@@ -6,45 +6,29 @@
   <title>Balance Telegram Mini App</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
-    // Замените на вашу конфигурацию Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyDs_9Q5MSh7x2QmIPaK1oqKGUwqU8yws_M",
-      authDomain: "afk2earn.firebaseapp.com",
-      projectId: "afk2earn",
-      storageBucket: "afk2earn.firebasestorage.app",
-      messagingSenderId: "1040364886446",
-      appId: "1:1040364886446:web:d647751249a71824d1503f",
-      measurementId: "G-VB6B6FPSZ2"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
+  <script>
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 
     const userId = tg.initDataUnsafe?.user?.id || 'default_user';
-    const userDoc = doc(db, "users", userId.toString());
     const pointsElement = document.getElementById('points');
+    const serverUrl = 'https://your-server-url'; // Замените на URL вашего сервера
 
-    // Реальное время обновления баллов
-    onSnapshot(userDoc, (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        const data = docSnapshot.data();
+    async function fetchUserData() {
+      try {
+        const response = await fetch(`${serverUrl}/user/${userId}`);
+        const data = await response.json();
         pointsElement.textContent = data.points.toFixed(3);
-      } else {
-        setDoc(userDoc, { points: 0, lastUpdate: Date.now() }, { merge: true });
-        pointsElement.textContent = "0.000";
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        pointsElement.textContent = '0.000';
       }
-    });
+    }
 
-    // Инициализация пользователя
-    setDoc(userDoc, { points: 0, lastUpdate: Date.now() }, { merge: true });
+    // Обновление каждые 1.5 секунды
+    fetchUserData();
+    setInterval(fetchUserData, 1500);
   </script>
   <style>
     body {
