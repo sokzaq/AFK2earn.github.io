@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -6,6 +6,45 @@
   <title>Balance Telegram Mini App</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    // Замените на вашу конфигурацию Firebase
+    const firebaseConfig = {
+      apiKey: "your-api-key",
+      authDomain: "your-project-id.firebaseapp.com",
+      projectId: "your-project-id",
+      storageBucket: "your-project-id.appspot.com",
+      messagingSenderId: "your-messaging-sender-id",
+      appId: "your-app-id"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    const userId = tg.initDataUnsafe?.user?.id || 'default_user';
+    const userDoc = doc(db, "users", userId.toString());
+    const pointsElement = document.getElementById('points');
+
+    // Реальное время обновления баллов
+    onSnapshot(userDoc, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        pointsElement.textContent = data.points.toFixed(3);
+      } else {
+        setDoc(userDoc, { points: 0, lastUpdate: Date.now() }, { merge: true });
+        pointsElement.textContent = "0.000";
+      }
+    });
+
+    // Инициализация пользователя
+    setDoc(userDoc, { points: 0, lastUpdate: Date.now() }, { merge: true });
+  </script>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -17,36 +56,5 @@
   <div class="text-center">
     <p class="text-6xl text-gray-600"><span id="points">0.000</span> $AFK</p>
   </div>
-
-  <script>
-    // Initialize Telegram Web App
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
-
-    // Points counter logic
-    let points = parseFloat(localStorage.getItem('points')) || 0;
-    const pointsElement = document.getElementById('points');
-    
-    // Update points display
-    function updatePoints() {
-      pointsElement.textContent = points.toFixed(3);
-      localStorage.setItem('points', points);
-    }
-
-    // Increment points every second
-    function incrementPoints() {
-      const lastUpdate = parseInt(localStorage.getItem('lastUpdate')) || Date.now();
-      const currentTime = Date.now();
-      const timeDiff = (currentTime - lastUpdate) / 1000; // Time difference in seconds
-      points += timeDiff * 0.001; // Increment points based on elapsed time
-      localStorage.setItem('lastUpdate', currentTime);
-      updatePoints();
-    }
-
-    // Update points immediately and then every second
-    incrementPoints();
-    setInterval(incrementPoints, 1000);
-  </script>
 </body>
 </html>
